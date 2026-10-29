@@ -1,0 +1,26 @@
+
+# ESP-IDF 编译输出
+/build/
+**/build/
+
+# ESP-IDF 自动下载的依赖
+/managed_components/
+
+# Python 虚拟环境及缓存
+.venv/
+__pycache__/
+*.pyc
+
+# 本地开发临时文件
+.vscode/.browse.c_cpp.db*
+.vscode/ipch/
+
+# 本地或旧版配置
+sdkconfig.old
+
+# 常见敏感文件
+.env
+.env.*
+secrets.h
+credentials.json
+  
