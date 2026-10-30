@@ -1,6 +1,5 @@
 #ifndef __XIAOZHI_WIFI_STA_H__
 #define __XIAOZHI_WIFI_STA_H__
-
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -13,25 +12,11 @@
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
-#include "xiaozhi_lvgl.h"
-/* ****************新增的蓝牙的宏***************************************** */
+
 #include <wifi_provisioning/manager.h>
 #include <wifi_provisioning/scheme_ble.h>
-/* ********************************************************** */
-
-/* *******新增的蓝牙宏*********************************************************** */
-#define PROV_QR_VERSION "v1"
-#define PROV_TRANSPORT_SOFTAP "softap"
-#define PROV_TRANSPORT_BLE "ble"
-#define QRCODE_BASE_URL "https://espressif.github.io/esp-jumpstart/qrcode.html"
-
-/* ********************************************************************* */
-
-/* *******新增的头文件二维码的*********************************************************** */
-
 #include "qrcode.h"
-/* ********************************************************************* */
-
+#include "xiaozhi_lvgl.h"
 
 #define EXAMPLE_ESP_WIFI_SSID CONFIG_ESP_WIFI_SSID
 #define EXAMPLE_ESP_WIFI_PASS CONFIG_ESP_WIFI_PASSWORD
@@ -64,14 +49,16 @@
 #elif CONFIG_ESP_WIFI_AUTH_WAPI_PSK
 #define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WAPI_PSK
 #endif
-//事件标志组所需要的那2个标志位
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
-
-//初始化
+#define PROV_QR_VERSION "v1"
+#define PROV_TRANSPORT_SOFTAP "softap"
+#define PROV_TRANSPORT_BLE "ble"
+#define QRCODE_BASE_URL "https://espressif.github.io/esp-jumpstart/qrcode.html"
+// WIFI_STA模式初始化方法
 void xiaozhi_wifi_sta_init(void);
 
-/* *************新增的函数**************** */
+// flash的已有wifi信息擦出掉
 void xiaozhi_wifi_sta_reset(void);
-/* ****************************************** */
+
 #endif /* __XIAOZHI_WIFI_STA_H__ */

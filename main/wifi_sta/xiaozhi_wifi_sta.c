@@ -1,7 +1,7 @@
 #include "xiaozhi_wifi_sta.h"
-
 // 事件标志组句柄
 static EventGroupHandle_t s_wifi_event_group;
+// ESP_LOG打印需要TAG字符串
 static const char *TAG = "wifi station";
 // WIFI重连次数
 static int s_retry_num = 0;
@@ -41,8 +41,8 @@ static void event_handler(void *arg, esp_event_base_t event_base,
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
 
-    /* ************************蓝牙配网新增事件处理************************************************************************************************ */
-     if (event_base == WIFI_PROV_EVENT)
+    /********************************蓝牙配网新增事件处理**************************************/
+    if (event_base == WIFI_PROV_EVENT)
     {
         switch (event_id)
         {
@@ -72,10 +72,8 @@ static void event_handler(void *arg, esp_event_base_t event_base,
         case WIFI_PROV_CRED_SUCCESS:
             // 蓝牙配网成功
             ESP_LOGI(TAG, "Provisioning successful");
-            //配网成功之后，删除二维码
+            // 配网成功,将二维码删除掉
             xiaozhi_lvgl_del_qr_code();
-            //删除顶部配网提示文字
-            xiaozhi_lvgl_update_top_content("");
             break;
         case WIFI_PROV_END:
             // 蓝牙配网成功以后,释放蓝牙资源释放!!!!!!!
@@ -85,10 +83,8 @@ static void event_handler(void *arg, esp_event_base_t event_base,
             break;
         }
     }
-    /* ******************************************************************************************************************************************** */
 
-    /* *****************************新增的回调函数的处理************************************************************************************************************** */
-        if (event_base == PROTOCOMM_SECURITY_SESSION_EVENT)
+    if (event_base == PROTOCOMM_SECURITY_SESSION_EVENT)
     {
         switch (event_id)
         {
@@ -105,28 +101,21 @@ static void event_handler(void *arg, esp_event_base_t event_base,
             break;
         }
     }
-
-    /* ************************************************************************************************************************************************* */
 }
 
-
-/* ****************新增的，用于获取蓝牙的名字******************************************************************************************* */
-// 获取ESP32开启蓝牙名字
+// 配网新增的,用于获取蓝牙名字
 static void get_device_service_name(char *service_name, size_t max)
 {
     // 获取当前设备MAC地址
     uint8_t eth_mac[6];
     esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
-    const char *ssid_prefix = "sz--sz";
+    const char *ssid_prefix = "PROV_";
     snprintf(service_name, max, "%s%02X%02X%02X",
              ssid_prefix, eth_mac[3], eth_mac[4], eth_mac[5]);
 }
 
-/* ************************************************************************************************************************************ */
+// 配网新增的,用于控制台生成二维码图像
 
-
-/* ***********新增的，用于生成二维码*************************************************************************************************** */
-//本质向在控制台生成一个二维码图像
 static void wifi_prov_print_qr(const char *name, const char *username, const char *pop, const char *transport)
 {
     if (!name || !transport)
@@ -149,22 +138,16 @@ static void wifi_prov_print_qr(const char *name, const char *username, const cha
                  PROV_QR_VERSION, name, transport);
     }
 
-    ESP_LOGI(TAG, "Scan this QR code from the provisioning application for Provisioning.");
-    //底下这两行代码:起始使用组件qrcode,专门用来生成二维码
+    // ESP_LOGI(TAG, "Scan this QR code from the provisioning application for Provisioning.");
+    // // 底下这两行代码:起始使用组件qrcode,专门用来生成二维码
     // esp_qrcode_config_t cfg = ESP_QRCODE_CONFIG_DEFAULT();
     // esp_qrcode_generate(&cfg, payload);
-    //上面注释掉的这2行是把二维码生成到控制台
-    //下面需要把配网的二维码生成到屏幕
-    xiaozhi_lvgl_update_top_content("请扫描二维码,给奶龙连接wifi");
+
+    /****lvgl展示配网二维码****/
+    // 顶部内容发生变化
+    xiaozhi_lvgl_update_top_content("请扫描二维码进行配网");
     xiaozhi_lvgl_show_qr_code(payload);
-  
 }
-
-
-
-/* ************************************************************************************************************* */
-
-
 
 // 2.初始化WIFI+STA模式工作
 void wifi_init_sta(void)
@@ -196,15 +179,14 @@ void wifi_init_sta(void)
                                         &event_handler,
                                         NULL,
                                         &instance_got_ip);
-
-/* **********************新增蓝牙配网事件三个************************************************************************************************ */
+    /*******************新增蓝牙配网事件三个***********************************************/
     esp_event_handler_register(WIFI_PROV_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL);
     esp_event_handler_register(PROTOCOMM_TRANSPORT_BLE_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL);
     esp_event_handler_register(PROTOCOMM_SECURITY_SESSION_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL);
-/* ******************************************************************************************************************************************** */
 
-/* *********************新增的配网的功能********************************************************************************************************************** */
-// 配网相关配置
+    /***************************新增配网功能代码******************************************************************** */
+
+    // 配网相关配置
     wifi_prov_mgr_config_t config = {
         .scheme = wifi_prov_scheme_ble,                                       // 配网模式选择:BLE配网
         .scheme_event_handler = WIFI_PROV_SCHEME_BLE_EVENT_HANDLER_FREE_BTDM, // 蓝牙配网完成以后,将ESP32蓝牙关闭!
@@ -257,7 +239,7 @@ void wifi_init_sta(void)
 
         // 蓝牙配网:算法1
         wifi_prov_mgr_start_provisioning(security, (const void *)sec_params, service_name, service_key);
-        //在控制台输出一个二维码图像,用于配网
+        // 在控制台输出一个二维码图像,用于配网
         wifi_prov_print_qr(service_name, username, pop, PROV_TRANSPORT_BLE);
     }
     else
@@ -265,35 +247,10 @@ void wifi_init_sta(void)
         ESP_LOGI(TAG, "Already provisioned, starting Wi-Fi STA");
         // 既然配过网,没必要在使用蓝牙资源,蓝牙资源关闭!
         wifi_prov_mgr_deinit();
-
-/* ****************这个是新增的，原来的注释掉了************************************************************************************ */        
-        // 直接连接热点
-        // wifi_init_sta();
-    // WIFI驱动处于STA模式,主动连接热点
-    esp_wifi_set_mode(WIFI_MODE_STA);
-    esp_wifi_start();
-
-
-/* ********************************************************************************************************** */
+        // WIFI驱动处于STA模式,主动连接热点
+        esp_wifi_set_mode(WIFI_MODE_STA);
+        esp_wifi_start();
     }
-/* ******************************************************************************************************************************************* */
-    //蓝牙配网这个不需要
-    /* //5.配置连接热点参数
-    wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = EXAMPLE_ESP_WIFI_SSID,//连接热点名字
-            .password = EXAMPLE_ESP_WIFI_PASS,//连接热点密码
-            .threshold.authmode = ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD,
-            .sae_pwe_h2e = ESP_WIFI_SAE_MODE,
-            .sae_h2e_identifier = EXAMPLE_H2E_IDENTIFIER,
-        },
-    };
-    //设置WIFI驱动工作模式
-    esp_wifi_set_mode(WIFI_MODE_STA);
-    //设置WIFI STA模式连接热点参数
-    esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
-    //开始连接热点
-    esp_wifi_start(); */
 
     EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
                                            WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
@@ -319,7 +276,7 @@ void wifi_init_sta(void)
     }
 }
 
-//初始化
+// 1.主函数
 void xiaozhi_wifi_sta_init(void)
 {
 
@@ -338,12 +295,12 @@ void xiaozhi_wifi_sta_init(void)
     wifi_init_sta();
 }
 
-/* *************新增的函数**************** */
-void xiaozhi_wifi_sta_reset(void){
-    //擦除掉flash wifi账号和密码
-    esp_wifi_restore();
-    //软件复位，没配网的配网
-    esp_restart();
+void xiaozhi_wifi_sta_reset(void)
+{
 
+    // 擦出掉FLASH WIFI账号与密码信息
+    esp_wifi_restore();
+
+    // 软件复位重启
+    esp_restart();
 }
-/* ****************************************** */
