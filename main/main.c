@@ -4,6 +4,7 @@
 #include "xiaozhi_lvgl.h"
 #include "xiaozhi_audio.h"
 #include "xiaozhi_http.h"
+#include "xiaozhi_sr.h"
 static char *TAG = "MAIN";
 // 按键事件触发回调
 void adc_button_callBack(void *button_handle, void *usr_data);
@@ -29,13 +30,8 @@ void app_main(void)
     // 4.HTTP客户端初始化+发送一个HTTP的POST请求(务必等设备配网成功以后有了wifi功能在发送)
     xiaozhi_http_client_init();
 
-    // 4.更新屏幕内容
-    xiaozhi_lvgl_update_top_content("尚硅谷AI小智");
-    xiaozhi_lvgl_update_mid_content("kissy");
-    xiaozhi_lvgl_update_bottom_content("你好呀,我是小智");
-
-    // 编解码器初始化一次:i2c、i2s、gpio,录制、播放参数初始化一次
-    xiaozhi_audio_codec_init();
+    // 5.初始化语音识别
+    xiaozhi_sr_init();
 }
 void adc_button_callBack(void *button_handle, void *usr_data)
 {

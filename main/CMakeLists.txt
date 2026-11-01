@@ -8,6 +8,8 @@ idf_component_register(
                       "./emoj/xiaozhi_emo.c"
                       "./audio/xiaozhi_audio.c"
                       "./http/xiaozhi_http.c"
+                      "./com/xiaozhi_data.c"
+                      "./audio/xiaozhi_sr.c"
                      INCLUDE_DIRS 
                       "."
                       "./button"
@@ -17,4 +19,5 @@ idf_component_register(
                       "./emoj"
                       "./audio"
                       "./http"
+                      "./com"
                      )

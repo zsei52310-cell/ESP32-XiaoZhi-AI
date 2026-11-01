@@ -20,3 +20,4 @@ dependencies:
   espressif/esp_lvgl_port: ^2.9.0
   78/xiaozhi-fonts: ^1.6.0
   espressif/esp_codec_dev: ^1.6.2
+  espressif/esp-sr: ^2.6.1
