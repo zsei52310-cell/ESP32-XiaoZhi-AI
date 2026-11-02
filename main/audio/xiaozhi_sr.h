@@ -6,14 +6,10 @@
 #include "esp_log.h"
 #include  "esp_heap_caps.h"
 #include "xiaozhi_audio.h"
-
-
-
-
-
+#include "xiaozhi_data.h"
+#include "esp_log.h"
 // 1.初始化方法
 void xiaozhi_sr_init(void);
-
 #endif
 
 /**

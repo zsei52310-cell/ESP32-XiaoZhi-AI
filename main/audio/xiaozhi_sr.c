@@ -1,4 +1,5 @@
 #include "xiaozhi_sr.h"
+static const char *TAG = "xiaozhi_sr";
 // AFE句柄
 const esp_afe_sr_iface_t *afe_handle;
 // AFE实例
@@ -33,25 +34,40 @@ void detect_Task(void *params)
         // 通过AFE算法持续获取语音识别结果
         afe_fetch_result_t *result = afe_handle->fetch(afe_data);
 
-        // 判断唤醒词检测结果
+        // 检测到唤醒词
         if (result->wakeup_state == WAKENET_DETECTED)
         {
-            ESP_LOGE("SR", "检测唤醒词小智++++++++++++++++++++++++++++++++++++++");
-        }
-        else
-        {
-            ESP_LOGW("SR", "未检测到唤醒词---------------------------------------");
+
+            // 全局结构体唤醒词成员:标记
+            xiaozhi_data.is_wakeup = true;
+            // 检测到唤醒词,执行唤醒词回调函数
+            if (xiaozhi_data.wakeup_callback != NULL)
+            {
+                xiaozhi_data.wakeup_callback();
+            }
         }
 
-        // 判断语音状态:说话、没说话
-        // if (result->vad_state == VAD_SILENCE)
-        // {
-        //     ESP_LOGI("SR", "检测到静音!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        // }
-        // else
-        // {
-        //     ESP_LOGE("SR", "检测到说话@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-        // }
+        // 语音状态检测:说话,静音!!!!
+        // 语音状态变化:持续静音,突然说话! (WS组件需要给虾哥服务器发送监听命令)     持续说话,突然静音!(WS组件需要给虾哥服务器发送停止监听)!
+        if (xiaozhi_data.is_wakeup)
+        {
+            // 存储语音当前检测结果
+            xiaozhi_data.vad_current_state = result->vad_state;
+            // 当前状态与上一次状态不一样,说明语音状态发生变化
+            if (xiaozhi_data.vad_current_state != xiaozhi_data.vad_last_state)
+            {
+                if (xiaozhi_data.vad_state_change_callback != NULL)
+                {
+                    xiaozhi_data.vad_state_change_callback();
+                }
+            }
+
+            // 存储语音上一次状态结果
+            xiaozhi_data.vad_last_state = xiaozhi_data.vad_current_state;
+        }
+
+
+        //A任务:将原始音频数据PCM扔到缓冲区:检测到唤醒词 + 人说话了!
     }
 }
 
@@ -72,12 +88,11 @@ void xiaozhi_sr_init(void)
     afe_config->wakenet_init = true;
     // 提升了唤醒的灵敏度
     afe_config->wakenet_mode = DET_MODE_90;
-    //声音检测灵敏度
-    afe_config->vad_mode =  VAD_MODE_3;
+    // 声音检测灵敏度
+    afe_config->vad_mode = VAD_MODE_3;
     afe_config->afe_ringbuf_size = 4 * 1024;
     // 更多的内存分配到外部的sram里去
     afe_config->memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
-
 
     // 2.创建AFE实例
     //  获取句柄

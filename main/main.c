@@ -5,12 +5,32 @@
 #include "xiaozhi_audio.h"
 #include "xiaozhi_http.h"
 #include "xiaozhi_sr.h"
+#include "xiaozhi_encoder.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/ringbuf.h"
 static char *TAG = "MAIN";
 // 按键事件触发回调
 void adc_button_callBack(void *button_handle, void *usr_data);
 
+// 创建环形缓冲区方法
+static void xiaozhi_ringbuf_create(void);
+
+// 根组件提供方法,用于获取SR识别唤醒词结果,检测到唤醒词会执行
+void xiaozhi_sr_wakeup_callback(void);
+// 根组件提供方法,用于指导语音状态发生变化
+void xiaozhi_sr_state_change_callback(void);
+
 void app_main(void)
 {
+
+    // 最早时间点创建环形缓冲区
+    xiaozhi_ringbuf_create();
+
+    // 0.任意组件想知道检测到唤醒词,仅需要再com/xiaozhi_data.c注册回调函数即可!
+    xiaozhi_data.wakeup_callback = xiaozhi_sr_wakeup_callback;
+    // 任意组件想知道语音状态发生变化,仅需要再com/xiaozhi_data.c注册回调函数即可!
+    xiaozhi_data.vad_state_change_callback = xiaozhi_sr_state_change_callback;
+
     // 1.初始化ADC按键
     xiaozhi_button_init();
     // 2.按键2,3注册回调
@@ -32,6 +52,9 @@ void app_main(void)
 
     // 5.初始化语音识别
     xiaozhi_sr_init();
+
+    // 6.编码器初始化
+    xiaozhi_opus_encoder_init();
 }
 void adc_button_callBack(void *button_handle, void *usr_data)
 {
@@ -52,4 +75,25 @@ void adc_button_callBack(void *button_handle, void *usr_data)
     default:
         break;
     }
+}
+
+void xiaozhi_sr_wakeup_callback(void)
+{
+    ESP_LOGE(TAG, "MAIN SR WAKEUP CALLBACK");
+}
+
+void xiaozhi_sr_state_change_callback(void)
+{
+    ESP_LOGI(TAG, "MAIN SR STATE CHANGE CALLBACK");
+}
+
+// 创建环形缓冲区
+static void xiaozhi_ringbuf_create(void)
+{
+
+    // 创建环形缓冲区
+    // 1.语音识别项目,用户一般能接受延迟时间300ms以内用户根本感知不到延迟
+    // 市面上语音识别延迟时间,用户感知时间300ms以后,用户根本感觉不到延迟!
+    // 1920->60ms     1920 * 5 = 9600字节数,缓冲区大小9600/1024 = 8.9k
+    xiaozhi_data.sr_to_encoder_handler = xRingbufferCreateWithCaps(10 * 1024, RINGBUF_TYPE_BYTEBUF, MALLOC_CAP_SPIRAM);
 }
