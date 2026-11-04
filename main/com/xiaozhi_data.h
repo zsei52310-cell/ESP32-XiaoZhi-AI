@@ -26,6 +26,12 @@ typedef struct
     // 将语音识别与编码器任务通信的环形缓冲区句柄,挂在到全局上!
     RingbufHandle_t sr_to_encoder_handler;
 
+    // 编码器与ws客户端组件使用的缓冲区
+    RingbufHandle_t encoder_to_ws_handler;
+
+    //ws客户端与解码器组件使用的缓冲区
+    RingbufHandle_t ws_to_decoder_handler;
+
 } xiaozhi_data_t;
 
 extern xiaozhi_data_t xiaozhi_data;

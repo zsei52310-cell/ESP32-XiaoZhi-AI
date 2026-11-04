@@ -55,13 +55,39 @@ void encoder_task(void *pvParameters)
     // 2.opus编码器需要配置的:压缩音频数据参数
     esp_audio_enc_out_frame_t opus_frame = {
         .buffer = opus_buffer, // 存储输出压缩音频数据缓冲区
-        .len = opus_size,
+        .len = opus_size,//缓冲区大小          .encoded_bytes才是编码器实际输出压缩音频字节个数
+ 
     };
 
     while (1)
     {
+        // 思路:SR_TO_ENCODER字节流缓冲区如果有原始音频数据提取。如果没有等待!
+        // 字节流提取60ms原始音频数据1920进行编码 esp_opus_enc_process(encoder, &pcm_frame, &opus_frame);
+        // 压缩成功167个字节opus数据
+        size_t len = 0;
+        size_t hope_size = pcm_size;
+        uint8_t *buffer_flag = pcm_frame.buffer;
+        // 向从字节流缓冲区多提取数据几次,目的向获取到60ms音频数据1920
+        while (hope_size > 0)
+        {
+            // 1.句柄 2.当前这一次提取数据实际字节个数  3.等待时间 4.这次希望提取数据字节个数  5.返回当前这次提取数据
+            void *data = xRingbufferReceiveUpTo(xiaozhi_data.sr_to_encoder_handler, &len, portMAX_DELAY, hope_size);
+
+            // 2.考虑下轮循环条件
+            hope_size -= len;
+            // 3.将每一次提取音频数据PCM,扔到咱们准备好的PCM缓冲区当中
+            memcpy(buffer_flag, data, len);
+            buffer_flag += len;
+
+            // 4.每一次提取完数用完释放
+            vRingbufferReturnItem(xiaozhi_data.sr_to_encoder_handler, data);
+        }
 
         // 3.持续编码之前获取到原始PCM数据进行编码,放到pcm_buffer缓冲区当中
         esp_opus_enc_process(encoder, &pcm_frame, &opus_frame);
+
+        // 4.编码器已经压缩完成,将pcm_frame.buffer存放的1920个原始音频数据已经压缩完成
+        //将压缩完成音频数据发送到编码器与ws客户端之间缓冲区当中
+        xRingbufferSend(xiaozhi_data.encoder_to_ws_handler,opus_frame.buffer,opus_frame.encoded_bytes,portMAX_DELAY);
     }
 }

@@ -6,6 +6,9 @@
 #include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/idf_additions.h"
+#include "freertos/ringbuf.h"
+#include "xiaozhi_data.h"
+#include "string.h"
 // 1.opus编码器初始化
 void xiaozhi_opus_encoder_init(void);
 #endif

@@ -66,8 +66,20 @@ void detect_Task(void *params)
             xiaozhi_data.vad_last_state = xiaozhi_data.vad_current_state;
         }
 
+        // 当语音识别模块识别到唤醒词且语音活动检测为说话状态,就可以将原始PCM数据发送到字节流缓冲区
+        // 1.检测到唤醒词,这个用户喊过唤醒词,后续再说话!
+        if (xiaozhi_data.is_wakeup && xiaozhi_data.vad_current_state == VAD_SPEECH)
+        {
+            // 缓存音频数据也需要发送缓冲区当中
+            if (result->vad_cache_size > 0)
+            {
+                xRingbufferSend(xiaozhi_data.sr_to_encoder_handler, result->vad_cache, result->vad_cache_size, portMAX_DELAY);
+            }
 
-        //A任务:将原始音频数据PCM扔到缓冲区:检测到唤醒词 + 人说话了!
+            // 将原始PCM数据发送到字节流缓冲区
+            // 1.缓冲区句柄 2.向缓冲区发送原始语音音频数据  3.原始PCM数据大小 4.阻塞时间
+            xRingbufferSend(xiaozhi_data.sr_to_encoder_handler, result->data, result->data_size, portMAX_DELAY);
+        }
     }
 }
 
