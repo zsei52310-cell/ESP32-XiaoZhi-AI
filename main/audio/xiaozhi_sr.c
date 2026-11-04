@@ -73,12 +73,12 @@ void detect_Task(void *params)
             // 缓存音频数据也需要发送缓冲区当中
             if (result->vad_cache_size > 0)
             {
-                xRingbufferSend(xiaozhi_data.sr_to_encoder_handler, result->vad_cache, result->vad_cache_size, portMAX_DELAY);
+                xRingbufferSend(xiaozhi_data.sr_to_encoder_handler, result->vad_cache, result->vad_cache_size, 1000);
             }
 
             // 将原始PCM数据发送到字节流缓冲区
             // 1.缓冲区句柄 2.向缓冲区发送原始语音音频数据  3.原始PCM数据大小 4.阻塞时间
-            xRingbufferSend(xiaozhi_data.sr_to_encoder_handler, result->data, result->data_size, portMAX_DELAY);
+            xRingbufferSend(xiaozhi_data.sr_to_encoder_handler, result->data, result->data_size, 1000);
         }
     }
 }

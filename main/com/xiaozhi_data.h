@@ -4,6 +4,20 @@
 #include "esp_vad.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/ringbuf.h"
+#include "freertos/event_groups.h"
+
+// 定义服务器(小智智能体状态)
+typedef enum
+{
+    // 空闲状态:服务器没有给我们返回任何数据
+    SERVER_IDLE,
+    // 说话状态:服务器给我们返回文本、音频消息
+    SERVER_SPEAKING,
+    // 监听状态:客户端给服务端发送语音数据,可以接受数据,识别音频数据!
+    SERVER_LISTENING
+
+} SERVER_STATE_T;
+
 typedef struct
 {
     // 存储websocket服务器信息
@@ -29,8 +43,19 @@ typedef struct
     // 编码器与ws客户端组件使用的缓冲区
     RingbufHandle_t encoder_to_ws_handler;
 
-    //ws客户端与解码器组件使用的缓冲区
+    // ws客户端与解码器组件使用的缓冲区
     RingbufHandle_t ws_to_decoder_handler;
+
+    // 事件标志组的句柄
+    EventGroupHandle_t event_group;
+
+    // 注册处理ws服务器返回文本信息回调
+    void (*ws_text_callback)(char *text, int len);
+    // 注册处理ws服务器返回二进制数据回调
+    void (*ws_binary_callback)(char *data, int len);
+
+    // 服务器状态:小智的状态(悟空智能体)
+    SERVER_STATE_T server_state;
 
 } xiaozhi_data_t;
 
